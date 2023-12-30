@@ -1,31 +1,40 @@
 const jwt = require('jsonwebtoken');
-const knex = require('knex');
+const db = require('../database');
+const { verificarSenha } = require('../senhaUtils');
+
 const senhaHash = process.env.SENHA_JWT;
 
 const fazerLogin = async (req, res) => {
-	const { email, senha } = req.body
+  const { email, senha } = req.body;
 
-	try {
-		const usuario = await knex('usuario').where({email}).first()
+  try {
+    const stmt = db.prepare('SELECT * FROM usuarios WHERE email = ?');
+    stmt.get(email, async (err, usuario) => {
+      if (err) {
+        return res.status(500).json({ mensagem: 'Erro interno do servidor' });
+      }
 
-		if (!usuario) {
-			return res.status(404).json({ messagem: "email ou senha inválido" })
-		}
+      if (!usuario) {
+        return res.status(404).json({ mensagem: 'Email ou senha inválido' });
+      }
 
-		await verificarSenha(senha, usuario)
+      const senhaValida = await verificarSenha(senha, usuario.senha);
 
+      if (!senhaValida) {
+        return res.status(401).json({ mensagem: 'Email ou senha inválido' });
+      }
 
-		const token = jwt.sign({ id: usuario.id }, senhaHash, { expiresIn: '30d' })
-		const { senha: _, ...usuarioLogado } = usuario
+      const token = jwt.sign({ id: usuario.id }, senhaHash, { expiresIn: '30d' });
+      const { senha: _, ...usuarioLogado } = usuario;
 
-
-		return res.json({ usuario: usuarioLogado, token })
-
-	} catch (error) {
-		res.status(500).json({ mensagem: "Erro interno do servidor" })
-	}
-}
+      res.json({ usuario: usuarioLogado, token });
+    });
+    stmt.finalize();
+  } catch (error) {
+    res.status(500).json({ mensagem: 'Erro interno do servidor' });
+  }
+};
 
 module.exports = {
-    fazerLogin
-}
+  fazerLogin,
+};
