@@ -8,6 +8,10 @@ const { cadastrarProduto, listarProdutos, detalharProduto, excluirProduto } = re
 
 const routes = express()
 
+routes.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK' });
+  });
+
 routes.post('/login', fazerLogin);
 routes.post('/usuario', cadastrarUsuario);
 

@@ -13,7 +13,7 @@ const validarToken = async (req, res, next) => {
         return res.status(401).json({ message: "Para acessar este recurso um token de autenticação válido deve ser enviado." });
     }
 
-    const token = authorization.split(' ')[1];
+    const token = authorization;
     const hash = params;
 
     try {
